@@ -108,11 +108,6 @@ stoic_quotes = [
     "No man is crushed by misfortune unless he has first been deceived by prosperity."
 ]
 
-class BanFlags(commands.FlagConverter):
-    member: discord.Member
-    reason: str
-    days: int = 1
-
 load_dotenv()
 
 token = getenv("DISCORD_TOKEN")
@@ -123,14 +118,52 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='$', intents=intents)
 
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('dkhl dekchi li khass :rolling_eyes:.')
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send("rak m3adek ta9lwa :angry:")
+
 @bot.command()
 async def test(ctx, arg):
     await ctx.send(arg)
 
-@bot.command()  # Moved this inside the bot instance
-async def ban(ctx, *, flags: BanFlags):
-    plural = f'{flags.days} days' if flags.days != 1 else f'{flags.days} day'
-    await ctx.send(f'Banned {flags.member} for {flags.reason!r} (deleted {plural} worth of messages)')
+
+@bot.command()
+@commands.has_permissions(ban_members = True)
+async def ban(ctx, member : discord.Member, *, reason = None):
+    await ctx.send("ha9 mcha")
+    await member.ban(reason = reason)
+
+#The below code unbans player.
+@bot.command()
+@commands.has_permissions(administrator = True)
+async def unban(ctx, *, member):
+    banned_users = await ctx.guild.bans()
+    member_name, member_discriminator = member.split("#")
+
+    for ban_entry in banned_users:
+        user = ban_entry.user
+
+        if (user.name, user.discriminator) == (member_name, member_discriminator):
+            await ctx.guild.unban(user)
+            await ctx.send(f'Unbanned {user.mention}')
+
+
+@bot.command(aliases=["av"])
+async def avatar(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+
+    embed = discord.Embed(
+        title=f"{member.name}'s Avatar",
+        color=discord.Color.green()
+    )
+    embed.set_image(url=member.avatar.url)
+    await ctx.send(embed=embed)
+
 
 @bot.event
 async def on_message(message):
