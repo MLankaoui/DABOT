@@ -1,8 +1,16 @@
+
+import cloudscraper
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from os import getenv
 import random
+import sys
+import time
+from bs4 import BeautifulSoup
+
+our_scraper = cloudscraper.create_scraper()
+
 
 images = [
     "images/stoic_one.jpeg",
@@ -136,6 +144,55 @@ async def test(ctx, arg):
 async def ban(ctx, member : discord.Member, *, reason = None):
     await ctx.send("ha9 mcha")
     await member.ban(reason = reason)
+
+@bot.command()
+async def jumia(ctx, *, content):
+    # Form the search endpoint URL
+    endpoint = f"https://www.jumia.ma/catalog/?q={content}"
+    
+    # Request the page using the scraper
+    r = our_scraper.get(endpoint)
+
+    # Inform the user that data is being fetched
+    await ctx.send(f" hani kan9lb 3la '{content}'...")
+
+    # Pause for a brief moment to simulate processing time
+    time.sleep(2)
+    
+    # Parse the HTML response
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    # Find elements based on the Jumia structure
+    products = soup.find_all('article', class_='prd _fb col c-prd')
+    
+    # Ensure that products were found
+    if products:
+        # Loop over a few products (e.g., top 3 results) for demonstration
+        for i, product in enumerate(products[:3]):
+            title = product.find('h3', class_='name').text.strip()
+            current_price = product.find('div', class_='prc').text.strip()
+            old_price = product.find('div', class_='old').text.strip() if product.find('div', class_='old') else "N/A"
+            discount = product.find('div', class_='tag _dsct _sm').text.strip() if product.find('div', class_='tag _dsct _sm') else "man9so oualou"
+            
+            # Create an embed message for each product
+            embed = discord.Embed(
+                title=f"resul ra9m: {i+1}",
+                description=f"hahouma details '{content}':",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="smia", value=title, inline=False)
+            embed.add_field(name="taman", value=current_price, inline=True)
+            embed.add_field(name="taman l9dim", value=old_price, inline=True)
+            embed.add_field(name="chhal n9so fih", value=discount, inline=True)
+            embed.add_field(name="lien diall produit", value=endpoint, inline=False)
+
+            # Send the embed message to the channel
+            await ctx.send(embed=embed)
+    else:
+        await ctx.send("Sorry, mal9it oualou")
+
+
+
 
 #The below code unbans player.
 @bot.command()
